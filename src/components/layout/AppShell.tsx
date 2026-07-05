@@ -19,9 +19,9 @@ export function AppShell({
   return (
     <>
       {sidebar}
-      <main className={cn("ml-60 min-h-screen flex flex-col", className)}>
+      <main className={cn("ml-60 h-screen flex flex-col", className)}>
         {header}
-        <div className="flex flex-1 overflow-hidden h-[calc(100vh-56px)] items-stretch min-h-0">
+        <div className="flex flex-1 overflow-hidden items-stretch min-h-0">
           {children}
         </div>
       </main>

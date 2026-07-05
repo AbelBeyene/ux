@@ -23,7 +23,7 @@ export function OutlinePanel({
 }: OutlinePanelProps) {
   return (
     <nav className={cn("py-stack-md px-2", className)} aria-label={title}>
-      <p className="text-[10px] uppercase font-bold text-text-muted tracking-widest px-4 mb-2">
+      <p className="text-label-xs uppercase font-bold text-text-muted tracking-widest px-4 mb-2">
         {title}
       </p>
       <ul className="space-y-1">

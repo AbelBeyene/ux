@@ -202,40 +202,51 @@ export function ResumeCritiquePage({ onNavigate }: ResumeCritiquePageProps) {
       {/* Right pane: insights dashboard */}
       <section className="w-2/5 h-full min-h-0 overflow-y-auto custom-scrollbar p-stack-lg border-l border-outline-variant bg-surface-bright space-y-stack-md">
         {critique.status === "loading" && (
-          <p className="flex items-center gap-2 text-label-sm text-text-muted">
+          <p className="flex items-center gap-2 text-label-sm text-text-muted animate-fade-rise">
             <Icon name="autorenew" size={16} className="animate-spin" />
-            Analyzing with AI…
+            Reviewing your resume…
           </p>
         )}
         {critique.status === "error" && (
-          <p className="text-label-sm text-text-muted">
-            Live AI analysis unavailable ({critique.error}) — showing example data.
+          <p className="text-label-sm text-text-muted animate-fade-rise">
+            Live review unavailable ({critique.error}). Showing example insights.
           </p>
         )}
 
-        <ScoreCard label="Overall Resume Score" score={displayScore} grade={displayGrade} />
+        <div className="animate-fade-rise">
+          <ScoreCard label="Overall Resume Score" score={displayScore} grade={displayGrade} />
+        </div>
 
-        <div className="grid grid-cols-2 gap-stack-sm">
+        <div
+          className="grid grid-cols-2 gap-stack-sm animate-fade-rise"
+          style={{ animationDelay: "80ms" }}
+        >
           {displayMetrics.map((metric) => (
             <MetricCard key={metric.label} metric={metric} />
           ))}
         </div>
 
         {displayFeatured && (
-          <CritiqueCard
-            ref={critiqueRef}
-            critique={displayFeatured}
-            highlighted={critiqueLinked}
-            onDismiss={() => {}}
-          />
+          <div className="animate-fade-rise" style={{ animationDelay: "160ms" }}>
+            <CritiqueCard
+              ref={critiqueRef}
+              critique={displayFeatured}
+              highlighted={critiqueLinked}
+              onDismiss={() => {}}
+            />
+          </div>
         )}
 
-        <ImprovementList title="Other Improvements" items={displayImprovements} />
+        <div className="animate-fade-rise" style={{ animationDelay: "240ms" }}>
+          <ImprovementList title="Other Improvements" items={displayImprovements} />
+        </div>
 
-        <MentorQuote
-          quote="Your design system experience is a standout. Highlight it more prominently in the first 30 seconds of reading."
-          author="AI Career Mentor"
-        />
+        <div className="animate-fade-rise" style={{ animationDelay: "320ms" }}>
+          <MentorQuote
+            quote="Your design system experience is a standout. Highlight it more prominently in the first 30 seconds of reading."
+            author="AI Career Mentor"
+          />
+        </div>
       </section>
     </AppShell>
   );

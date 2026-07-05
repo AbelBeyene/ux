@@ -26,7 +26,7 @@ export function GaugeCard({ title, score, rating, caption, className }: GaugeCar
           strokeWidth={14}
           className="mb-6"
           centerLabel={
-            <div className="text-center">
+            <div className="font-sans text-center">
               <span className="text-headline-lg text-primary block">{score}</span>
               {rating && (
                 <span className="text-label-sm text-text-muted uppercase">{rating}</span>

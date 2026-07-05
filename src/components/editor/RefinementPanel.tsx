@@ -34,7 +34,7 @@ export function RefinementPanel({
       <div className="p-stack-md border-b border-outline-variant">
         <div className="flex justify-between items-center mb-1">
           <h2 className="text-headline-md text-text-main">{title}</h2>
-          <span className="bg-secondary text-on-secondary text-[10px] px-2 py-0.5 rounded-full font-bold uppercase">
+          <span className="bg-secondary text-on-secondary text-label-xs px-2 py-0.5 rounded-full font-bold uppercase">
             {suggestionCount} Suggestions
           </span>
         </div>

@@ -49,8 +49,15 @@ export function Sidebar({
       )}
     >
       <div className="mb-stack-lg px-2">
-        <h1 className="text-headline-md font-bold text-white">{brand}</h1>
-        {brandSubtitle && <p className="text-body-sm text-on-primary-container">{brandSubtitle}</p>}
+        <h1 className="text-brand font-bold text-white">
+          {brand}
+          <span className="text-secondary">.</span>
+        </h1>
+        {brandSubtitle && (
+          <p className="text-label-sm uppercase text-on-primary-container mt-0.5">
+            {brandSubtitle}
+          </p>
+        )}
       </div>
 
       <nav className="flex-1 space-y-2" aria-label="Main navigation">
@@ -69,8 +76,9 @@ export function Sidebar({
               }}
               className={cn(
                 "flex items-center gap-stack-sm px-3 py-2.5 rounded-lg text-body-md",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
                 active
-                  ? "text-white font-bold bg-white/15"
+                  ? "text-white font-bold bg-white/15 shadow-[inset_3px_0_0_theme(colors.secondary)]"
                   : "text-on-primary-container hover:bg-white/10 hover:text-white transition-colors duration-200 ease-in-out",
               )}
             >
@@ -92,7 +100,7 @@ export function Sidebar({
             <Avatar src={user.avatarUrl} alt={user.name} />
             <div>
               <p className="font-bold text-body-sm text-white">{user.name}</p>
-              <p className="text-[10px] uppercase tracking-wider text-on-primary-container">
+              <p className="text-label-xs uppercase tracking-wider text-on-primary-container">
                 {user.role}
               </p>
             </div>

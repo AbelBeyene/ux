@@ -35,9 +35,9 @@ export const CritiqueCard = forwardRef<HTMLDivElement, CritiqueCardProps>(functi
           </div>
           <p className="text-body-md text-text-main mb-6">{critique.description}</p>
           {critique.suggestion && (
-            <div className="bg-surface-container-low p-4 rounded-lg border border-outline-variant mb-6">
-              <p className="text-label-md text-text-muted mb-2">Suggested Rewrite</p>
-              <p className="text-body-md text-text-main italic leading-relaxed">
+            <div className="bg-paper p-4 rounded-lg border border-paper-line mb-6">
+              <p className="text-label-md text-text-muted uppercase mb-2">Suggested rewrite</p>
+              <p className="font-display text-body-lg italic text-text-main leading-relaxed">
                 “{critique.suggestion}”
               </p>
             </div>

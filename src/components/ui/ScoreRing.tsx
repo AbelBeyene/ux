@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { cn } from "../../lib/cn";
 
 export interface ScoreRingProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -23,7 +24,14 @@ export function ScoreRing({
   const clamped = Math.min(100, Math.max(0, value));
   const radius = diameter / 2 - strokeWidth;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - clamped / 100);
+
+  // Sweep in from empty on mount; the stroke transition below animates it.
+  const [sweep, setSweep] = useState(0);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setSweep(clamped));
+    return () => cancelAnimationFrame(raf);
+  }, [clamped]);
+  const offset = circumference * (1 - sweep / 100);
 
   return (
     <div
@@ -57,7 +65,7 @@ export function ScoreRing({
         />
       </svg>
       {centerLabel !== undefined && (
-        <div className="absolute inset-0 flex items-center justify-center font-bold text-headline-md text-primary">
+        <div className="absolute inset-0 flex items-center justify-center font-display text-display-md text-primary">
           {centerLabel}
         </div>
       )}

@@ -49,7 +49,7 @@ function OptionCard({ selected, onSelect, icon, title, badge, description, child
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-bold text-body-md text-text-main">{title}</p>
             {badge && (
-              <span className="bg-secondary text-on-secondary text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase">
+              <span className="bg-secondary text-on-secondary text-label-xs px-1.5 py-0.5 rounded-full font-bold uppercase">
                 {badge}
               </span>
             )}

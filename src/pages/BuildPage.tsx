@@ -11,7 +11,6 @@ import {
   OutlinePanel,
   RefinementPanel,
   ResumeDocument,
-  ScorePill,
   SuggestionCard,
   SuggestionGroupSection,
   type OutlineItem,
@@ -136,7 +135,6 @@ export function BuildPage({ onNavigate }: BuildPageProps) {
           contact={{
             items: ["New York, NY", "arivera.pro@email.com", "555-0123", "linkedin.com/in/arivera"],
           }}
-          overlay={<ScorePill label="Resume Score: 84/100" />}
         >
           <DocSection id="professional-summary" title="Professional Summary">
             <p className="text-body-md text-text-main leading-relaxed">

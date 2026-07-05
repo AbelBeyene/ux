@@ -21,7 +21,7 @@ export function TopBar({ title, status, actions, utilities, className }: TopBarP
       )}
     >
       <div className="flex items-center gap-stack-md">
-        <h2 className="text-headline-md font-extrabold text-primary">{title}</h2>
+        <h2 className="text-headline-sm font-bold text-primary">{title}</h2>
         {status && (
           <>
             <div className="h-6 w-px bg-outline-variant" aria-hidden="true" />

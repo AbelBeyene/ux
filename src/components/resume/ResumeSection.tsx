@@ -10,7 +10,9 @@ export interface ResumeSectionProps {
 export function ResumeSection({ title, children, className }: ResumeSectionProps) {
   return (
     <section className={cn("space-y-stack-md", className)}>
-      <h4 className="text-label-md text-secondary uppercase tracking-widest">{title}</h4>
+      <h4 className="text-label-md text-secondary uppercase tracking-widest flex items-center gap-stack-sm after:h-px after:flex-1 after:bg-paper-line">
+        {title}
+      </h4>
       {children}
     </section>
   );

@@ -27,11 +27,11 @@ export function Card({
   return (
     <div
       className={cn(
-        "bg-surface-container-lowest rounded-lg border border-outline-variant",
-        accent && "border-l-8 border-l-secondary shadow-md",
-        !accent && "shadow-sm",
+        "bg-surface-container-lowest rounded-xl border border-outline-variant",
+        accent && "border-l-4 border-l-secondary shadow-card",
+        !accent && "shadow-card",
         interactive &&
-          "transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(18,46,69,0.08)]",
+          "transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgba(18,46,69,0.06),0_10px_28px_-10px_rgba(18,46,69,0.18)]",
         paddingClasses[padding],
         className,
       )}

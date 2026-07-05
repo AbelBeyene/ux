@@ -64,6 +64,16 @@ const config: Config = {
         "surface-white": "#FFFFFF",
         "primary-container": "#122e45",
         "text-muted": "#5C6F7E",
+        // "Paper world": the resume document renders on warm stock, distinct
+        // from the cool app chrome around it.
+        paper: "#FFFDF7",
+        "paper-line": "#EDE7DA",
+      },
+      boxShadow: {
+        // A sheet resting on the desk: tight contact shadow + soft ambient.
+        paper:
+          "0 1px 2px rgba(18, 46, 69, 0.07), 0 12px 32px -12px rgba(18, 46, 69, 0.22)",
+        card: "0 1px 2px rgba(18, 46, 69, 0.05), 0 4px 16px -8px rgba(18, 46, 69, 0.1)",
       },
       borderRadius: {
         DEFAULT: "0.125rem",
@@ -82,19 +92,39 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["'Hanken Grotesk'", "system-ui", "sans-serif"],
+        // Display serif for verdict moments (scores, grades) and the resume
+        // document itself — the product's material is the typeset page.
+        display: ["'Fraunces'", "Georgia", "serif"],
       },
       // Type scale aligned to Material Design 3 (m3.material.io/styles/typography):
       // body-md = M3 body-medium, headline-md = M3 title-medium,
       // headline-lg = M3 headline-small, labels = M3 label-small/medium.
       fontSize: {
         "headline-lg-mobile": ["22px", { lineHeight: "28px", fontWeight: "700" }],
+        "label-xs": ["10px", { lineHeight: "14px", letterSpacing: "0.5px", fontWeight: "500" }],
         "label-sm": ["11px", { lineHeight: "16px", letterSpacing: "0.5px", fontWeight: "500" }],
         "headline-lg": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "700" }],
         "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
         "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.5px", fontWeight: "600" }],
         "headline-md": ["16px", { lineHeight: "24px", fontWeight: "600" }],
+        // Chrome-level page title (TopBar) — sits between headline-md and
+        // headline-lg, set in the display serif rather than the body sans.
+        "headline-sm": ["18px", { lineHeight: "24px" }],
+        // Brand wordmark size, shared by Sidebar and the auth screens.
+        brand: ["22px", { lineHeight: "28px" }],
         "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
         "body-sm": ["12px", { lineHeight: "16px", fontWeight: "400" }],
+        "display-lg": ["52px", { lineHeight: "1", letterSpacing: "-0.02em", fontWeight: "550" }],
+        "display-md": ["30px", { lineHeight: "36px", letterSpacing: "-0.01em", fontWeight: "550" }],
+      },
+      keyframes: {
+        "fade-rise": {
+          from: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "1", transform: "none" },
+        },
+      },
+      animation: {
+        "fade-rise": "fade-rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both",
       },
     },
   },

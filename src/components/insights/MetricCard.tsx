@@ -14,7 +14,12 @@ export function MetricCard({ metric, className }: MetricCardProps) {
     <Card padding="sm" className={cn("shadow-none", className)}>
       <p className="text-label-md text-text-muted uppercase mb-2">{metric.label}</p>
       <div className="flex items-center justify-between mb-2">
-        <span className={cn("text-headline-md", good ? "text-primary" : "text-secondary")}>
+        <span
+          className={cn(
+            "text-headline-md tabular-nums",
+            good ? "text-primary" : "text-secondary",
+          )}
+        >
           {metric.value}%
         </span>
         <Icon
