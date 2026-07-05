@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router";
+import { queryClient } from "./app/queryClient";
 import { ResumeCritiquePage } from "./pages/ResumeCritiquePage";
 import { BuildPage } from "./pages/BuildPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -7,27 +9,48 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { SignInPage } from "./pages/SignInPage";
 import { SignUpPage } from "./pages/SignUpPage";
 
-export default function App() {
-  const [pageId, setPageId] = useState(() => window.location.hash.slice(1) || "dashboard");
-  const navigate = (id: string) => {
-    window.location.hash = id;
-    setPageId(id);
-  };
+/**
+ * Maps the design system's page-id navigation contract (`onNavigate("build")`,
+ * used by Sidebar/HeaderUtilities/page-to-page links) onto real routes, so no
+ * page component needs to know a router exists.
+ */
+const PAGE_PATHS: Record<string, string> = {
+  dashboard: "/",
+  resumes: "/resumes",
+  build: "/build",
+  history: "/history",
+  settings: "/settings",
+  signin: "/signin",
+  signup: "/signup",
+};
 
-  switch (pageId) {
-    case "build":
-      return <BuildPage onNavigate={navigate} />;
-    case "resumes":
-      return <ResumeCritiquePage onNavigate={navigate} />;
-    case "history":
-      return <HistoryPage onNavigate={navigate} />;
-    case "settings":
-      return <SettingsPage onNavigate={navigate} />;
-    case "signin":
-      return <SignInPage onNavigate={navigate} />;
-    case "signup":
-      return <SignUpPage onNavigate={navigate} />;
-    default:
-      return <DashboardPage onNavigate={navigate} />;
-  }
+function useAppNavigate() {
+  const navigate = useNavigate();
+  return (pageId: string) => navigate(PAGE_PATHS[pageId] ?? "/");
+}
+
+function AppRoutes() {
+  const onNavigate = useAppNavigate();
+  return (
+    <Routes>
+      <Route path="/" element={<DashboardPage onNavigate={onNavigate} />} />
+      <Route path="/resumes" element={<ResumeCritiquePage onNavigate={onNavigate} />} />
+      <Route path="/build" element={<BuildPage onNavigate={onNavigate} />} />
+      <Route path="/history" element={<HistoryPage onNavigate={onNavigate} />} />
+      <Route path="/settings" element={<SettingsPage onNavigate={onNavigate} />} />
+      <Route path="/signin" element={<SignInPage onNavigate={onNavigate} />} />
+      <Route path="/signup" element={<SignUpPage onNavigate={onNavigate} />} />
+      <Route path="*" element={<DashboardPage onNavigate={onNavigate} />} />
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
 }

@@ -56,6 +56,9 @@ pages up to an actual AI provider. It follows one hard rule:
 
 ```
 src/
+  app/
+    queryClient.ts          # shared TanStack Query client (retry policy, staleTime)
+  App.tsx                  # <BrowserRouter> + route table; bridges onNavigate(pageId) to real paths
   config/env.ts          # typed access to client-safe VITE_* vars only
   services/
     apiClient.ts          # fetch wrapper for OUR backend: timeout, abort, typed errors
@@ -67,7 +70,7 @@ src/
     resume-critique/         # one domain module = types + api + hook, e.g.:
       types.ts                 # ResumeCritiqueResult, ResumeDocSection, ...
       api.ts                    # requestResumeCritique() -> POST /api/critique
-      useResumeCritique.ts        # status/data/error + run()/reset(), abortable
+      useResumeCritique.ts        # TanStack Query-backed: cache, auto-cancel stale runs, status/data/error
       __tests__/                   # mocks fetch at the boundary, proves the full flow
 
 api/                        # Vercel serverless functions (Node runtime, never bundled to client)
@@ -84,6 +87,26 @@ parser in `api/_lib/<feature>.ts`, a thin `api/<feature>.ts` HTTP handler, and a
 `src/features/<feature>/` module (types/api/hook) that the UI calls through
 `apiClient` — never `fetch` directly, so timeouts, aborts, and error handling
 stay consistent everywhere.
+
+### Routing and state management
+
+- **Routing**: `react-router` (`BrowserRouter`), one route per page in `src/App.tsx`.
+  Pages don't import the router directly — they still take an `onNavigate(pageId)`
+  prop (Sidebar, header menus, and cross-page links all call it the same way they
+  did before routing existed); `App.tsx` is the only place that maps a page id to
+  a real path and calls `useNavigate()`. That keeps every page component reusable
+  outside this router setup if you copy it into another project. Because routes
+  are real paths now (not `#hash` fragments), deep links and refresh both work —
+  `vercel.json` rewrites unmatched paths to `index.html` so this keeps working
+  once deployed as a static SPA.
+- **State management**: no global client-state store (Redux/Zustand) — the state
+  worth centralizing here is *server* state (AI results with loading/error/staleness),
+  which is what `@tanstack/react-query` is for. `useResumeCritique` wraps a `useQuery`
+  keyed on the submitted resume text: resubmitting identical text is served from
+  cache instead of re-billing the AI provider, and submitting new text while a
+  previous run is in flight cancels the stale request automatically. Purely local
+  UI state (an open dialog, a form draft) stays as component `useState`, on purpose —
+  routing it through Query or a global store would be the wrong tool for it.
 
 ### Environment variables
 

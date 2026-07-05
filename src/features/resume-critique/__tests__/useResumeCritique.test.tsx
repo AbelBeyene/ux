@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useResumeCritique } from "../useResumeCritique";
 import type { ResumeCritiqueResult } from "../types";
@@ -20,6 +21,15 @@ const mockResult: ResumeCritiqueResult = {
   quickWins: ["Quantify the Meta role's impact with a metric."],
 };
 
+// Fresh QueryClient per test — no retries, so failures surface immediately
+// instead of waiting through backoff delays.
+function renderResumeCritique() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return renderHook(() => useResumeCritique(), {
+    wrapper: ({ children }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,
+  });
+}
+
 describe("useResumeCritique", () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -38,12 +48,10 @@ describe("useResumeCritique", () => {
   });
 
   it("goes idle -> loading -> success and exposes the parsed critique", async () => {
-    const { result } = renderHook(() => useResumeCritique());
+    const { result } = renderResumeCritique();
     expect(result.current.status).toBe("idle");
 
-    act(() => {
-      void result.current.run("some resume text");
-    });
+    act(() => result.current.run("some resume text"));
     expect(result.current.status).toBe("loading");
 
     await waitFor(() => expect(result.current.status).toBe("success"));
@@ -57,10 +65,8 @@ describe("useResumeCritique", () => {
       vi.fn(async () => new Response(JSON.stringify({ error: "boom", code: "provider_error" }), { status: 502 })),
     );
 
-    const { result } = renderHook(() => useResumeCritique());
-    act(() => {
-      void result.current.run("some resume text");
-    });
+    const { result } = renderResumeCritique();
+    act(() => result.current.run("some resume text"));
 
     await waitFor(() => expect(result.current.status).toBe("error"));
     // 5xx responses map to a generic, user-safe message rather than leaking backend text.
@@ -69,14 +75,26 @@ describe("useResumeCritique", () => {
   });
 
   it("reset returns the hook to idle with no data", async () => {
-    const { result } = renderHook(() => useResumeCritique());
-    act(() => {
-      void result.current.run("some resume text");
-    });
+    const { result } = renderResumeCritique();
+    act(() => result.current.run("some resume text"));
     await waitFor(() => expect(result.current.status).toBe("success"));
 
     act(() => result.current.reset());
     expect(result.current.status).toBe("idle");
     expect(result.current.data).toBeNull();
+  });
+
+  it("serves a repeated submission of the same text from cache without re-fetching", async () => {
+    const { result } = renderResumeCritique();
+    act(() => result.current.run("some resume text"));
+    await waitFor(() => expect(result.current.status).toBe("success"));
+
+    const fetchSpy = vi.mocked(fetch);
+    const callsBefore = fetchSpy.mock.calls.length;
+
+    act(() => result.current.run("some resume text"));
+    expect(result.current.status).toBe("success");
+    expect(result.current.data).toEqual(mockResult);
+    expect(fetchSpy.mock.calls.length).toBe(callsBefore);
   });
 });

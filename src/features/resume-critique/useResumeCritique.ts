@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { friendlyErrorMessage } from "../../services/apiError";
 import { requestResumeCritique } from "./api";
 import type { ResumeCritiqueResult } from "./types";
@@ -9,44 +10,46 @@ export interface UseResumeCritique {
   status: ResumeCritiqueStatus;
   data: ResumeCritiqueResult | null;
   error: string | null;
-  /** Trigger a critique run for the given resume text. Cancels any run already in flight. */
-  run: (resumeText: string) => Promise<void>;
+  /** Trigger a critique run for the given resume text. */
+  run: (resumeText: string) => void;
   reset: () => void;
 }
 
-/** Drives the resume-critique backend call: manual trigger, in-flight cancellation, typed status. */
+const QUERY_KEY = "resume-critique";
+
+/**
+ * Drives the resume-critique backend call through TanStack Query, keyed on
+ * the submitted resume text. This gets us two things a hand-rolled fetch
+ * hook has to reimplement: re-submitting the same text is served from cache
+ * instead of re-billing the AI provider, and submitting new text while a
+ * previous run is in flight aborts the stale request automatically (Query
+ * passes an AbortSignal into the query function on key change/unmount).
+ */
 export function useResumeCritique(): UseResumeCritique {
-  const [status, setStatus] = useState<ResumeCritiqueStatus>("idle");
-  const [data, setData] = useState<ResumeCritiqueResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const controllerRef = useRef<AbortController | null>(null);
+  const [resumeText, setResumeText] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const run = useCallback(async (resumeText: string) => {
-    controllerRef.current?.abort();
-    const controller = new AbortController();
-    controllerRef.current = controller;
+  const query = useQuery({
+    queryKey: [QUERY_KEY, resumeText] as const,
+    queryFn: ({ signal }) => requestResumeCritique({ resumeText: resumeText! }, { signal }),
+    enabled: resumeText !== null,
+  });
 
-    setStatus("loading");
-    setError(null);
-
-    try {
-      const result = await requestResumeCritique({ resumeText }, { signal: controller.signal });
-      if (controller.signal.aborted) return;
-      setData(result);
-      setStatus("success");
-    } catch (err) {
-      if (controller.signal.aborted) return;
-      setError(friendlyErrorMessage(err));
-      setStatus("error");
-    }
-  }, []);
+  const run = useCallback((text: string) => setResumeText(text), []);
 
   const reset = useCallback(() => {
-    controllerRef.current?.abort();
-    setStatus("idle");
-    setData(null);
-    setError(null);
-  }, []);
+    setResumeText(null);
+    queryClient.removeQueries({ queryKey: [QUERY_KEY] });
+  }, [queryClient]);
 
-  return { status, data, error, run, reset };
+  const status: ResumeCritiqueStatus =
+    resumeText === null ? "idle" : query.isError ? "error" : query.isSuccess ? "success" : "loading";
+
+  return {
+    status,
+    data: query.data ?? null,
+    error: query.error ? friendlyErrorMessage(query.error) : null,
+    run,
+    reset,
+  };
 }
