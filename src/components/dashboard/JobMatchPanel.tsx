@@ -7,10 +7,15 @@ export interface JobMatchPanelProps {
   jobs: JobListing[];
   /** True while listings are being fetched; renders skeleton cards. */
   loading?: boolean;
+  /** Set when fetching failed (or matching isn't configured) — replaces the generic empty-state copy. */
+  error?: string | null;
   /** Portal the listings come from, shown in the header subtitle. */
   sourceLabel?: string;
+  /** Ids of listings the user has saved; fills their bookmark icons. */
+  savedJobIds?: ReadonlySet<string>;
   onRefresh?: () => void;
   onApply?: (job: JobListing) => void;
+  /** Toggles a listing in/out of the saved set. */
   onSave?: (job: JobListing) => void;
   /** "View all" action at the bottom of the panel. */
   onViewAll?: () => void;
@@ -21,7 +26,9 @@ export interface JobMatchPanelProps {
 export function JobMatchPanel({
   jobs,
   loading = false,
+  error = null,
   sourceLabel,
+  savedJobIds,
   onRefresh,
   onApply,
   onSave,
@@ -49,7 +56,9 @@ export function JobMatchPanel({
         <p className="text-body-sm text-text-muted">
           {loading
             ? "Fetching listings for your resume…"
-            : `${jobs.length} roles matched to your resume${sourceLabel ? ` from ${sourceLabel}` : ""}.`}
+            : error
+              ? error
+              : `${jobs.length} roles matched to your resume${sourceLabel ? ` from ${sourceLabel}` : ""}.`}
         </p>
       </div>
 
@@ -57,13 +66,19 @@ export function JobMatchPanel({
         {loading
           ? Array.from({ length: 4 }, (_, i) => <JobCardSkeleton key={i} />)
           : jobs.map((job) => (
-              <JobCard key={job.id} job={job} onApply={onApply} onSave={onSave} />
+              <JobCard
+                key={job.id}
+                job={job}
+                saved={savedJobIds?.has(job.id)}
+                onApply={onApply}
+                onSave={onSave}
+              />
             ))}
         {!loading && jobs.length === 0 && (
           <div className="text-center py-10 px-4">
             <Icon name="work_off" size={32} className="text-outline mb-2" />
             <p className="text-body-sm text-text-muted">
-              No matching jobs right now. Re-scan your resume or broaden your target role.
+              {error ?? "No matching jobs right now. Re-scan your resume or broaden your target role."}
             </p>
           </div>
         )}

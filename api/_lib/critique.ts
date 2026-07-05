@@ -1,6 +1,11 @@
-import { callOpenRouter, extractJsonCandidate, truncateResumeText } from "./openrouter";
+import { truncateText } from "../../src/lib/text";
+import { callOpenRouter } from "./openrouter";
+import { parseAiJson } from "./parseAiJson";
 import { HttpError } from "./http";
 import type { ResumeCritiqueResult } from "../../src/features/resume-critique/types";
+
+// Keeps a single request comfortably within typical AI-provider TPM limits.
+const MAX_RESUME_PROMPT_CHARS = 6000;
 
 const SCHEMA_HINT = `{
   "overallScore": 0,
@@ -43,11 +48,10 @@ function isValidCritique(value: unknown): value is ResumeCritiqueResult {
 
 /** Runs the AI resume critique and returns a validated, clamped result. */
 export async function analyzeResumeCritique(resumeText: string): Promise<ResumeCritiqueResult> {
-  const resume = truncateResumeText(resumeText);
+  const resume = truncateText(resumeText, MAX_RESUME_PROMPT_CHARS);
   const response = await callOpenRouter([{ role: "user", content: buildPrompt(resume) }], true);
 
-  const candidate = extractJsonCandidate(response);
-  const parsed = candidate ? safeJsonParse(candidate) : null;
+  const parsed = await parseAiJson<unknown>(response, SCHEMA_HINT);
 
   if (!isValidCritique(parsed)) {
     throw new HttpError(502, "The AI returned an unexpected response format. Please try again.", "invalid_ai_response");
@@ -57,12 +61,4 @@ export async function analyzeResumeCritique(resumeText: string): Promise<ResumeC
     ...parsed,
     overallScore: Math.min(100, Math.max(0, Math.round(parsed.overallScore))),
   };
-}
-
-function safeJsonParse(candidate: string): unknown {
-  try {
-    return JSON.parse(candidate);
-  } catch {
-    return null;
-  }
 }

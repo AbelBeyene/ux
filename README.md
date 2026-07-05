@@ -45,10 +45,24 @@ types (`Critique`, `Improvement`, `ScoreMetric`, …) are in `src/types/resume.t
 
 ## Production architecture
 
-The pages above render entirely from local demo data (`src/data/*.ts`) — that's
-deliberate, so the component library works with zero configuration when reused
-elsewhere. Alongside it, the project has a real, secure backend layer for wiring
-pages up to an actual AI provider. It follows one hard rule:
+The component library still works with zero configuration — every page falls back
+to local demo data (`src/data/*.ts`) whenever no backend is configured, a call is
+in flight, or a call fails, so copying a page into another project never breaks.
+But two flows are now genuinely live against real backends, not just demo data:
+
+- **Resume Critique & Build pages** run the actual resume text shown on each page
+  through `/api/critique` on load, and replace the demo score/findings/suggestions
+  with the real AI response the moment it resolves (see `useResumeCritique` and the
+  presentation mappers in `src/features/resume-critique/present.ts`).
+- **Dashboard's "Matched Jobs" panel** calls a real job-search API (`/api/jobs`,
+  proxying JSearch/RapidAPI) and scores each live listing against the resume's own
+  skills client-side (`src/lib/jobMatch.ts`) — nothing here is canned.
+
+Both degrade the same honest way: a small "Analyzing with AI…" / error line appears
+above the affected panel, and the page keeps rendering demo content underneath it
+rather than blanking out.
+
+This all sits on a secure backend layer that follows one hard rule:
 
 > **Provider API keys (OpenRouter, etc.) never reach the browser.** The client
 > only ever calls our own `/api/*` endpoints; those serverless functions hold
@@ -65,22 +79,42 @@ src/
     apiError.ts            # ApiError + friendlyErrorMessage() for user-facing copy
   lib/
     jsonExtract.ts          # pulls JSON out of a raw LLM completion (fenced or bare)
-    __tests__/               # unit tests for the above
+    text.ts                  # truncateText() — generic char-budget truncation
+    aiErrorMapping.ts          # pure: provider HTTP status -> {code, message, httpStatus} for OUR api
+    jobMatch.ts                 # pure: generic keyword-overlap scorer, resume skills vs. any job text
+    __tests__/                   # unit tests for all of the above, no network involved
   features/
-    resume-critique/         # one domain module = types + api + hook, e.g.:
+    resume-critique/         # one domain module = types + api + hook + presentation mappers:
       types.ts                 # ResumeCritiqueResult, ResumeDocSection, ...
       api.ts                    # requestResumeCritique() -> POST /api/critique
       useResumeCritique.ts        # TanStack Query-backed: cache, auto-cancel stale runs, status/data/error
+      present.ts                   # maps the API shape onto the UI's Critique/Improvement/ScoreMetric/
+                                    # SuggestionGroup types — pure, unit-tested, no page knows the API shape
       __tests__/                   # mocks fetch at the boundary, proves the full flow
+    job-matching/             # same shape, for job search:
+      types.ts, api.ts, useJobMatches.ts, present.ts
 
 api/                        # Vercel serverless functions (Node runtime, never bundled to client)
   _lib/
     env.ts                    # server-only secrets via process.env (no VITE_ prefix)
     http.ts                    # withHandler() method guard + consistent JSON error shape
-    openrouter.ts                # calls the AI provider: key rotation, retry/backoff on 429
-    critique.ts                    # the critique prompt + response validation
-  critique.ts                 # POST /api/critique — the actual HTTP endpoint
+    openrouter.ts                # calls the AI provider: key rotation, retry/backoff on 429,
+                                  # transport failures mapped via src/lib/aiErrorMapping.ts
+    parseAiJson.ts                # parses a completion as JSON; if malformed, asks the model
+                                   # once to repair its own output before giving up
+    critique.ts                    # the critique prompt + business-shape validation
+    jobSearch.ts                     # JSearch/RapidAPI client — structured params in, no text-sniffing
+  critique.ts                 # POST /api/critique
+  jobs.ts                       # GET /api/jobs?role=...&location=...&country=... — 501 jobs_not_configured
+                                # when RAPIDAPI_KEY is absent, matching adaptmycv's "sidebar just
+                                # doesn't appear without a key" precedent, just as an explicit error code
 ```
+
+The split is deliberate: `aiErrorMapping.ts` and `text.ts` are pure decision logic (no
+network, no secrets) so they live in `src/lib` and are unit-tested directly; `openrouter.ts`
+and `parseAiJson.ts` are the network *orchestration* that uses them, so they live in
+`api/_lib` where the provider secrets are available. Nothing about "what message does a
+429 deserve" needs a live API call to test, so it isn't tested through one.
 
 **Adding a new AI-backed feature** follows the same shape every time: a prompt +
 parser in `api/_lib/<feature>.ts`, a thin `api/<feature>.ts` HTTP handler, and a
@@ -110,7 +144,14 @@ stay consistent everywhere.
 
 ### Environment variables
 
-Copy `.env.example` to `.env.local` (already git-ignored) and fill in real values.
+Copy `.env.example` to **`.env`** (not `.env.local`) and fill in real values — both
+files are git-ignored, but only `.env` gets picked up by `vercel dev`'s serverless
+function runtime in local testing; `vite`'s own dev server reads either, so `.env`
+is the one that works for both halves of the app.
+
+To actually exercise `/api/critique` locally against a real provider (not just the
+UI), run `npx vercel dev` instead of `npm run dev` — the plain Vite dev server has
+no serverless runtime, so `/api/*` routes 404 under it.
 
 | Variable | Where it's read | Required |
 | --- | --- | --- |
@@ -118,6 +159,7 @@ Copy `.env.example` to `.env.local` (already git-ignored) and fill in real value
 | `OPENROUTER_API_KEY_2` | `api/_lib/env.ts` (server-only) | No — optional fallback key for rate-limit resilience |
 | `OPENROUTER_API_URL` | `api/_lib/env.ts` (server-only) | No — defaults to OpenRouter's endpoint |
 | `OPENROUTER_MODEL` | `api/_lib/env.ts` (server-only) | No — defaults to `google/gemini-2.0-flash` |
+| `RAPIDAPI_KEY` | `api/_lib/env.ts` (server-only) | No — job matching returns a clear `jobs_not_configured` error without it |
 | `VITE_API_BASE_URL` | `src/config/env.ts` (client) | No — defaults to same-origin `/api` |
 
 Only `VITE_`-prefixed variables are ever inlined into the browser bundle by Vite;

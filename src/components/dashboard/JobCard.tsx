@@ -4,6 +4,8 @@ import type { JobListing } from "../../types/dashboard";
 
 export interface JobCardProps {
   job: JobListing;
+  /** Whether the listing is in the user's saved set; fills the bookmark icon. */
+  saved?: boolean;
   onApply?: (job: JobListing) => void;
   onSave?: (job: JobListing) => void;
   className?: string;
@@ -17,7 +19,7 @@ function matchStyles(score: number) {
 }
 
 /** Job listing fetched from a portal, scored against the uploaded resume. */
-export function JobCard({ job, onApply, onSave, className }: JobCardProps) {
+export function JobCard({ job, saved = false, onApply, onSave, className }: JobCardProps) {
   return (
     <article
       className={cn(
@@ -75,11 +77,15 @@ export function JobCard({ job, onApply, onSave, className }: JobCardProps) {
           {onSave && (
             <button
               type="button"
-              aria-label={`Save ${job.title}`}
+              aria-label={saved ? `Unsave ${job.title}` : `Save ${job.title}`}
+              aria-pressed={saved}
               onClick={() => onSave(job)}
-              className="p-1.5 text-text-muted hover:text-secondary hover:bg-surface-container-low rounded-full transition-colors"
+              className={cn(
+                "p-1.5 hover:bg-surface-container-low rounded-full transition-colors",
+                saved ? "text-secondary" : "text-text-muted hover:text-secondary",
+              )}
             >
-              <Icon name="bookmark" size={18} />
+              <Icon name="bookmark" filled={saved} size={18} />
             </button>
           )}
           {onApply && (

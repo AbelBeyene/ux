@@ -39,6 +39,32 @@ export const skills = [
   "Prototyping",
 ];
 
+/**
+ * Plain-text rendering of the demo resume shown on the Critique and Build
+ * pages — sent as-is to the AI critique backend. Kept as a separate export
+ * (rather than extracted from the JSX) so the pretty on-page markup and the
+ * text actually submitted to the model can't silently drift apart.
+ */
+export const resumePlainText = `${profile.name}
+${profile.title} — ${profile.location} — ${profile.email}
+
+PROFESSIONAL SUMMARY
+Dedicated Product Designer with over 8 years of experience building human-centric digital experiences. I am skilled in Figma and UX research. I have helped companies grow their user base by implementing data-driven designs. Passionate about solving complex problems through elegant, scalable visual systems.
+
+PROFESSIONAL EXPERIENCE
+Lead UI/UX Designer — TechScale Solutions (2020 – Present)
+- Directed a team of 5 designers to overhaul the core SaaS platform, resulting in a 32% increase in user retention over 12 months.
+- Implemented a comprehensive design system that reduced front-end development time by 40%.
+- Collaborated with cross-functional product teams to define roadmaps and user journeys.
+
+Product Designer — Innovate Lab (2017 – 2020)
+- Designed end-to-end mobile experiences for Series A fintech startups.
+- Conducted 50+ user interviews to identify pain points in the onboarding flow.
+- Produced high-fidelity prototypes and managed stakeholder presentations.
+
+SKILLS
+${skills.join(", ")}`;
+
 export const metrics: ScoreMetric[] = [
   { label: "Clarity", value: 85, tone: "good" },
   { label: "Engagement", value: 62, tone: "warning" },

@@ -45,3 +45,9 @@ export function requireStringField(body: unknown, field: string, maxLength: numb
   }
   return value.slice(0, maxLength);
 }
+
+/** Reads a single-value query-string param (Vercel gives `string | string[] | undefined`). */
+export function queryParam(query: VercelRequest["query"], name: string): string | undefined {
+  const value = query[name];
+  return Array.isArray(value) ? value[0] : value;
+}

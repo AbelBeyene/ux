@@ -5,14 +5,6 @@
  * which only ever sees `VITE_`-prefixed, client-safe values).
  */
 
-function required(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required server environment variable: ${name}`);
-  }
-  return value;
-}
-
 export const serverEnv = {
   get openRouterApiKeys(): string[] {
     return [process.env.OPENROUTER_API_KEY, process.env.OPENROUTER_API_KEY_2].filter(
@@ -32,6 +24,9 @@ export const serverEnv = {
     }
     return keys;
   },
-};
 
-export { required };
+  /** Optional — job matching degrades gracefully (see api/jobs.ts) rather than requiring this. */
+  get rapidApiKey(): string | null {
+    return process.env.RAPIDAPI_KEY || null;
+  },
+};

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AppShell,
   HeaderUtilities,
@@ -20,6 +20,7 @@ import {
   MetricCard,
   ScoreCard,
 } from "../components/insights";
+import { presentCritique, scoreToGrade, toScoreMetrics, useResumeCritique } from "../features/resume-critique";
 import {
   activeCritique,
   currentUser,
@@ -28,6 +29,7 @@ import {
   navItems,
   notifications,
   profile,
+  resumePlainText,
   skills,
 } from "../data/resume";
 import type { ExperienceEntry } from "../types/resume";
@@ -55,6 +57,23 @@ export function ResumeCritiquePage({ onNavigate }: ResumeCritiquePageProps) {
   };
 
   const [strengthHovered, setStrengthHovered] = useState(false);
+
+  // Runs the real AI critique against the demo resume on load. Falls back to
+  // the static demo insights below if it's still loading, errors, or no
+  // backend is configured — the page never looks broken either way.
+  const critique = useResumeCritique();
+  const { run: runCritique } = critique;
+  useEffect(() => {
+    runCritique(resumePlainText);
+  }, [runCritique]);
+
+  const live = critique.status === "success" && critique.data ? critique.data : null;
+  const displayScore = live ? live.overallScore : 78;
+  const displayGrade = live ? scoreToGrade(live.overallScore) : "B+";
+  const displayMetrics = live ? toScoreMetrics(live.sections) : metrics;
+  const { featured: displayFeatured, improvements: displayImprovements } = live
+    ? presentCritique(live)
+    : { featured: activeCritique, improvements };
 
   const experience: ExperienceEntry[] = [
     {
@@ -182,22 +201,36 @@ export function ResumeCritiquePage({ onNavigate }: ResumeCritiquePageProps) {
 
       {/* Right pane: insights dashboard */}
       <section className="w-2/5 h-full min-h-0 overflow-y-auto custom-scrollbar p-stack-lg border-l border-outline-variant bg-surface-bright space-y-stack-md">
-        <ScoreCard label="Overall Resume Score" score={78} grade="B+" />
+        {critique.status === "loading" && (
+          <p className="flex items-center gap-2 text-label-sm text-text-muted">
+            <Icon name="autorenew" size={16} className="animate-spin" />
+            Analyzing with AI…
+          </p>
+        )}
+        {critique.status === "error" && (
+          <p className="text-label-sm text-text-muted">
+            Live AI analysis unavailable ({critique.error}) — showing example data.
+          </p>
+        )}
+
+        <ScoreCard label="Overall Resume Score" score={displayScore} grade={displayGrade} />
 
         <div className="grid grid-cols-2 gap-stack-sm">
-          {metrics.map((metric) => (
+          {displayMetrics.map((metric) => (
             <MetricCard key={metric.label} metric={metric} />
           ))}
         </div>
 
-        <CritiqueCard
-          ref={critiqueRef}
-          critique={activeCritique}
-          highlighted={critiqueLinked}
-          onDismiss={() => {}}
-        />
+        {displayFeatured && (
+          <CritiqueCard
+            ref={critiqueRef}
+            critique={displayFeatured}
+            highlighted={critiqueLinked}
+            onDismiss={() => {}}
+          />
+        )}
 
-        <ImprovementList title="Other Improvements" items={improvements} />
+        <ImprovementList title="Other Improvements" items={displayImprovements} />
 
         <MentorQuote
           quote="Your design system experience is a standout. Highlight it more prominently in the first 30 seconds of reading."

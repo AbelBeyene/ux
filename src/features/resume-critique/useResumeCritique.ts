@@ -12,6 +12,8 @@ export interface UseResumeCritique {
   error: string | null;
   /** Trigger a critique run for the given resume text. */
   run: (resumeText: string) => void;
+  /** Force a fresh AI call for the current resume text, bypassing the cache (e.g. a "Re-scan" action). */
+  rescan: () => void;
   reset: () => void;
 }
 
@@ -37,6 +39,11 @@ export function useResumeCritique(): UseResumeCritique {
 
   const run = useCallback((text: string) => setResumeText(text), []);
 
+  const { refetch } = query;
+  const rescan = useCallback(() => {
+    if (resumeText !== null) void refetch();
+  }, [resumeText, refetch]);
+
   const reset = useCallback(() => {
     setResumeText(null);
     queryClient.removeQueries({ queryKey: [QUERY_KEY] });
@@ -50,6 +57,7 @@ export function useResumeCritique(): UseResumeCritique {
     data: query.data ?? null,
     error: query.error ? friendlyErrorMessage(query.error) : null,
     run,
+    rescan,
     reset,
   };
 }

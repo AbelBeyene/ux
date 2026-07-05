@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AppShell, HeaderUtilities, Sidebar, TopBar } from "../components/layout";
 import { Button, Fab, Icon, SearchInput } from "../components/ui";
 import {
@@ -8,8 +9,22 @@ import {
   KeywordGrid,
   RelevanceCard,
 } from "../components/dashboard";
-import { useJobMatches } from "../hooks/useJobMatches";
-import { currentUser, navItems, notifications } from "../data/resume";
+import { useJobMatches } from "../features/job-matching";
+import {
+  toCareerStages,
+  toFormattingChecks,
+  toKeywordMatches,
+  toRelevanceScores,
+  useAtsAnalysis,
+} from "../features/ats-analysis";
+import {
+  currentUser,
+  navItems,
+  notifications,
+  profile,
+  resumePlainText,
+  skills,
+} from "../data/resume";
 import {
   careerStages,
   formattingChecks,
@@ -23,7 +38,40 @@ export interface DashboardPageProps {
 
 /** ATS analytics dashboard: readiness gauge, keyword analysis, checks, career projection. */
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
-  const { jobs, loading, refresh } = useJobMatches();
+  // Runs the real AI analysis against the demo resume on load. Falls back to
+  // the static demo data below while loading or on error — the page never
+  // looks broken either way.
+  const analysis = useAtsAnalysis({ resumeText: resumePlainText, targetRole: profile.title });
+  const live = analysis.data;
+
+  const displayScore = live ? live.readinessScore : 84;
+  const displayRating = live ? live.readinessRating : "Excellent";
+  const displayCaption = live
+    ? live.readinessCaption
+    : "Your resume is in the top 15% of parsed documents for Product Design roles.";
+  const displayKeywords = live ? toKeywordMatches(live.keywords) : keywordMatches;
+  const displayChecks = live ? toFormattingChecks(live.formattingChecks) : formattingChecks;
+  const displayRelevance = live ? toRelevanceScores(live.relevanceScores) : relevanceScores;
+  const displayStages = live ? toCareerStages(live.careerStages) : careerStages;
+  const displayCareerHeadline = live ? live.careerHeadline : "Path to Design Director";
+  const displayCareerDescription = live
+    ? live.careerDescription
+    : "Based on your current experience progression, you are 2.5 years away from Leadership roles.";
+
+  // Saved jobs live only in client state for now — no persistence backend yet.
+  const [savedJobIds, setSavedJobIds] = useState<ReadonlySet<string>>(new Set());
+
+  const { jobs, loading, error, refresh } = useJobMatches({
+    query: {
+      role: profile.title,
+      location: profile.location,
+      country: "us",
+      datePosted: "week",
+      employmentType: "all",
+      remoteOnly: false,
+    },
+    skills,
+  });
 
   return (
     <AppShell
@@ -60,14 +108,32 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
                 <span className="font-bold text-primary">Senior_Product_Designer_2024.pdf</span> •
                 Analyzed 2 hours ago
               </p>
+              {analysis.loading && (
+                <p className="mt-1 flex items-center gap-2 text-label-sm text-text-muted">
+                  <Icon name="autorenew" size={16} className="animate-spin" />
+                  Analyzing with AI…
+                </p>
+              )}
+              {analysis.error && (
+                <p className="mt-1 text-label-sm text-text-muted">
+                  Live AI analysis unavailable ({analysis.error}) — showing example data.
+                </p>
+              )}
             </div>
             <div className="flex gap-3">
               <Button variant="outline" className="flex items-center gap-2 rounded">
                 <Icon name="upload_file" size={20} />
                 Upload Resume
               </Button>
-              <Button className="flex items-center gap-2 rounded">
-                <Icon name="refresh" size={20} />
+              <Button
+                className="flex items-center gap-2 rounded"
+                disabled={analysis.loading}
+                onClick={() => {
+                  analysis.refresh();
+                  refresh();
+                }}
+              >
+                <Icon name="refresh" size={20} className={analysis.loading ? "animate-spin" : undefined} />
                 Re-scan
               </Button>
             </div>
@@ -78,20 +144,20 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             <GaugeCard
               className="col-span-12 lg:col-span-4"
               title="ATS Readiness"
-              score={84}
-              rating="Excellent"
-              caption="Your resume is in the top 15% of parsed documents for Product Design roles."
+              score={displayScore}
+              rating={displayRating}
+              caption={displayCaption}
             />
-            <KeywordGrid className="col-span-12 lg:col-span-8" keywords={keywordMatches} />
+            <KeywordGrid className="col-span-12 lg:col-span-8" keywords={displayKeywords} />
             <ChecklistCard
               className="col-span-12 lg:col-span-5"
               title="Formatting Integrity"
-              checks={formattingChecks}
+              checks={displayChecks}
             />
             <RelevanceCard
               className="col-span-12 lg:col-span-7"
               title="Industry Relevance"
-              scores={relevanceScores}
+              scores={displayRelevance}
             />
           </div>
         </div>
@@ -100,26 +166,41 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
         <footer className="mt-auto">
           <CareerPathCard
             eyebrow="AI Career Projection"
-            headline="Path to Design Director"
-            description="Based on your current experience progression, you are 2.5 years away from Leadership roles."
-            stages={careerStages}
+            headline={displayCareerHeadline}
+            description={displayCareerDescription}
+            stages={displayStages}
           />
         </footer>
       </main>
 
-      {/* Related jobs fetched from the job portal for this resume */}
+      {/* Related jobs fetched live from the job portal, scored against this resume's skills */}
       <JobMatchPanel
         jobs={jobs}
         loading={loading}
-        sourceLabel="LinkedIn & Indeed"
+        error={error}
+        savedJobIds={savedJobIds}
         onRefresh={refresh}
-        onApply={() => {}}
-        onSave={() => {}}
-        onViewAll={() => {}}
+        onApply={(job) => {
+          if (job.applyLink) window.open(job.applyLink, "_blank", "noopener,noreferrer");
+        }}
+        onSave={(job) =>
+          setSavedJobIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(job.id)) next.delete(job.id);
+            else next.add(job.id);
+            return next;
+          })
+        }
+        onViewAll={() => onNavigate?.("history")}
       />
 
       {/* Offset left of the jobs rail (w-80) so it doesn't cover its footer */}
-      <Fab icon="rocket_launch" label="Optimize Now" className="right-[22rem]" />
+      <Fab
+        icon="rocket_launch"
+        label="Optimize Now"
+        className="right-[22rem]"
+        onClick={() => onNavigate?.("build")}
+      />
     </AppShell>
   );
 }

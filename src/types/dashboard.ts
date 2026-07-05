@@ -38,6 +38,8 @@ export interface JobListing {
   postedAgo: string;
   /** Job portal the listing was fetched from, e.g. "LinkedIn". */
   source: string;
+  /** URL to the actual posting, when known — powers the Apply button. */
+  applyLink?: string;
 }
 
 export interface CareerStage {

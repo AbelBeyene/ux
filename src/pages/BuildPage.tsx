@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell, HeaderUtilities, Sidebar, TopBar } from "../components/layout";
-import { Button, Tag } from "../components/ui";
+import { Button, Icon, Tag } from "../components/ui";
 import { cn } from "../lib/cn";
 import {
   AiMarker,
@@ -16,8 +16,9 @@ import {
   SuggestionGroupSection,
   type OutlineItem,
 } from "../components/editor";
+import { toSuggestionGroups, useResumeCritique } from "../features/resume-critique";
 import { currentUser, navItems, notifications } from "../data/resume";
-import { competencies, outlineItems, suggestionGroups } from "../data/build";
+import { buildResumePlainText, competencies, outlineItems, suggestionGroups as demoSuggestionGroups } from "../data/build";
 import { resumeMeta } from "../data/analytics";
 import type { SuggestionGroup } from "../types/resume";
 
@@ -33,9 +34,30 @@ export function BuildPage({ onNavigate }: BuildPageProps) {
   const [activeSection, setActiveSection] = useState<string>();
   const [exportOpen, setExportOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+
+  // Runs the real AI critique against this page's own demo resume. Falls
+  // back to the static demo suggestion groups while loading, on error, or
+  // when no backend is configured.
+  const critique = useResumeCritique();
+  const { run: runCritique } = critique;
+  useEffect(() => {
+    runCritique(buildResumePlainText);
+  }, [runCritique]);
+
+  const suggestionGroups: SuggestionGroup[] =
+    critique.status === "success" && critique.data ? toSuggestionGroups(critique.data) : demoSuggestionGroups;
+
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    [suggestionGroups[0].id]: true,
+    [demoSuggestionGroups[0].id]: true,
   });
+
+  // Re-expand the first group whenever the underlying group set changes
+  // (demo -> live swap on success, or a fresh critique run).
+  useEffect(() => {
+    const groups =
+      critique.status === "success" && critique.data ? toSuggestionGroups(critique.data) : demoSuggestionGroups;
+    if (groups[0]) setExpandedGroups({ [groups[0].id]: true });
+  }, [critique.status, critique.data]);
 
   /** Panel → document: expanding a group scrolls to its section and marks it in the outline. */
   const toggleGroup = (group: SuggestionGroup) => {
@@ -189,8 +211,19 @@ export function BuildPage({ onNavigate }: BuildPageProps) {
         subtitle="Personalized improvements based on Senior PM benchmarks."
         suggestionCount={suggestionGroups.reduce((n, g) => n + g.suggestions.length, 0)}
         progress={60}
-        onRescan={() => {}}
+        onRescan={critique.rescan}
       >
+        {critique.status === "loading" && (
+          <p className="flex items-center gap-2 text-label-sm text-text-muted pb-2">
+            <Icon name="autorenew" size={16} className="animate-spin" />
+            Analyzing with AI…
+          </p>
+        )}
+        {critique.status === "error" && (
+          <p className="text-label-sm text-text-muted pb-2">
+            Live AI analysis unavailable ({critique.error}) — showing example suggestions.
+          </p>
+        )}
         {suggestionGroups.map((group) => (
           <SuggestionGroupSection
             key={group.id}

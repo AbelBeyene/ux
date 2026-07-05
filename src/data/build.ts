@@ -18,6 +18,33 @@ export const competencies = [
   "Team Leadership",
 ];
 
+/**
+ * Plain-text rendering of the Build page's own demo resume (a different
+ * persona from the Critique page's) — sent to the AI critique backend as-is.
+ */
+export const buildResumePlainText = `Alexander Rivera
+New York, NY — arivera.pro@email.com — 555-0123 — linkedin.com/in/arivera
+
+PROFESSIONAL SUMMARY
+Visionary Senior Project Manager with 10+ years of experience leading cross-functional teams in high-growth tech environments. Proven track record of delivering complex software products under budget. Passionate about optimizing workflows and driving operational excellence through data-driven strategies.
+
+CORE COMPETENCIES
+${competencies.join(", ")}
+
+PROFESSIONAL EXPERIENCE
+Senior Project Manager — Google, Mountain View, CA (2019 – Present)
+- Managed a $15M product portfolio focusing on cloud infrastructure scaling.
+- Led a global team of 45 engineers to reduce latency by 24% across core services.
+- Implemented new SCRUM frameworks that increased velocity by 30% within 6 months.
+
+Technical Project Manager — Meta, Menlo Park, CA (2015 – 2019)
+- Orchestrated the launch of 3 major feature updates for the Instagram ads platform.
+- Worked with stakeholders to define requirements and project scope.
+- Reduced operational overhead by 12% through automation of reporting tools.
+
+EDUCATION
+M.S. in Management Science, Stanford University, 2015`;
+
 export const suggestionGroups: SuggestionGroup[] = [
   {
     id: "group-summary",
