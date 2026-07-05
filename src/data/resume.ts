@@ -10,7 +10,7 @@ export const navItems: SidebarNavItem[] = [
 ];
 
 export const currentUser: SidebarUser & { email: string } = {
-  name: "Alex Rivera",
+  name: "Amanuel Aslan",
   email: "alex.rivera@example.com",
   role: "User profile",
   avatarUrl:

@@ -1,4 +1,4 @@
-import { Icon } from "../ui";
+import { Icon, Logo } from "../ui";
 
 export interface AuthLayoutProps {
   /** Form card heading. */
@@ -21,7 +21,10 @@ export function AuthLayout({
       {/* Brand panel */}
       <aside className="hidden lg:flex w-[42%] shrink-0 h-full overflow-y-auto custom-scrollbar bg-primary-container text-white flex-col justify-between p-margin-desktop">
         <div>
-          <h1 className="text-brand font-bold">ResumeAI</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <Logo size={36} />
+            <h1 className="text-brand font-bold">ResumeAI</h1>
+          </div>
           <p className="text-label-sm text-on-primary-container uppercase tracking-wider">
             AI Career Platform
           </p>
@@ -45,7 +48,8 @@ export function AuthLayout({
       {/* Form area */}
       <main className="flex-1 h-full overflow-y-auto custom-scrollbar flex flex-col items-center justify-center p-margin-mobile">
         <div className="w-full max-w-md">
-          <div className="lg:hidden mb-stack-lg text-center">
+          <div className="lg:hidden mb-stack-lg flex items-center justify-center gap-2">
+            <Logo size={32} />
             <h1 className="text-brand font-bold text-primary">
               ResumeAI
             </h1>

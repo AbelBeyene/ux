@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { cn } from "../../lib/cn";
-import { Avatar, Button, Dialog, Icon } from "../ui";
+import { Avatar, Button, Dialog, Icon, Logo } from "../ui";
 
 export interface SidebarNavItem {
   /** Stable identifier, also used to mark the active item. */
@@ -51,16 +51,19 @@ export function Sidebar({
         className,
       )}
     >
-      <div className="mb-stack-lg px-2">
-        <h1 className="text-brand font-bold text-white">
-          {brand}
-          <span className="text-secondary">.</span>
-        </h1>
-        {brandSubtitle && (
-          <p className="text-label-sm uppercase text-on-primary-container mt-0.5">
-            {brandSubtitle}
-          </p>
-        )}
+      <div className="mb-stack-lg px-2 flex items-center gap-2">
+        <Logo size={32} />
+        <div>
+          <h1 className="text-brand font-bold text-white">
+            {brand}
+            <span className="text-secondary">.</span>
+          </h1>
+          {brandSubtitle && (
+            <p className="text-label-sm uppercase text-on-primary-container mt-0.5">
+              {brandSubtitle}
+            </p>
+          )}
+        </div>
       </div>
 
       <nav className="flex-1 space-y-2" aria-label="Main navigation">

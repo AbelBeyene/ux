@@ -17,8 +17,7 @@ import {
   CritiqueCard,
   ImprovementList,
   MentorQuote,
-  MetricCard,
-  ScoreCard,
+  ScoreOverviewCard,
 } from "../components/insights";
 import { presentCritique, scoreToGrade, toScoreMetrics, useResumeCritique } from "../features/resume-critique";
 import { useCopyToClipboard } from "../lib/useCopyToClipboard";
@@ -217,16 +216,12 @@ export function ResumeCritiquePage({ onNavigate }: ResumeCritiquePageProps) {
         )}
 
         <div className="animate-fade-rise">
-          <ScoreCard label="Overall Resume Score" score={displayScore} grade={displayGrade} />
-        </div>
-
-        <div
-          className="grid grid-cols-2 gap-stack-sm animate-fade-rise"
-          style={{ animationDelay: "80ms" }}
-        >
-          {displayMetrics.map((metric) => (
-            <MetricCard key={metric.label} metric={metric} />
-          ))}
+          <ScoreOverviewCard
+            label="Overall Resume Score"
+            score={displayScore}
+            grade={displayGrade}
+            metrics={displayMetrics}
+          />
         </div>
 
         {displayFeatured && (
