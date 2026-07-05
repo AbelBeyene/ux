@@ -88,6 +88,10 @@
    print-to-PDF — no client PDF library needed. Only the tagged resume node
    is shown; everything else in the app chrome is hidden for the print pass. */
 @media print {
+  html,
+  body {
+    background: white;
+  }
   body * {
     visibility: hidden;
   }
