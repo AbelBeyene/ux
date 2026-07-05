@@ -21,6 +21,7 @@ import {
   ScoreCard,
 } from "../components/insights";
 import { presentCritique, scoreToGrade, toScoreMetrics, useResumeCritique } from "../features/resume-critique";
+import { useCopyToClipboard } from "../lib/useCopyToClipboard";
 import {
   activeCritique,
   currentUser,
@@ -32,6 +33,7 @@ import {
   resumePlainText,
   skills,
 } from "../data/resume";
+import { resumeMeta } from "../data/analytics";
 import type { ExperienceEntry } from "../types/resume";
 
 export interface ResumeCritiquePageProps {
@@ -44,6 +46,7 @@ export function ResumeCritiquePage({ onNavigate }: ResumeCritiquePageProps) {
   // the linked critique card in the insights pane.
   const [critiqueLinked, setCritiqueLinked] = useState(false);
   const critiqueRef = useRef<HTMLDivElement>(null);
+  const { copied, copy } = useCopyToClipboard();
 
   const revisionHoverProps = {
     onMouseEnter: () => {
@@ -139,8 +142,8 @@ export function ResumeCritiquePage({ onNavigate }: ResumeCritiquePageProps) {
           status="Last saved: 2m ago"
           actions={
             <>
-              <Button variant="text" size="sm">
-                Share
+              <Button variant="text" size="sm" onClick={() => copy(resumeMeta.shareUrl)}>
+                {copied ? "Link Copied!" : "Share"}
               </Button>
               <Button
                 size="md"

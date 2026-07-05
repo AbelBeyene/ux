@@ -40,7 +40,12 @@ export function SignInPage({ onNavigate }: SignInPageProps) {
             required
           />
           <div className="mt-2 text-right">
-            <button type="button" className="text-label-sm font-bold text-text-muted hover:text-secondary transition-colors">
+            <button
+              type="button"
+              disabled
+              title="Not available in this demo"
+              className="text-label-sm font-bold text-text-muted opacity-50 cursor-not-allowed"
+            >
               Forgot password?
             </button>
           </div>
@@ -53,11 +58,21 @@ export function SignInPage({ onNavigate }: SignInPageProps) {
       <AuthDivider />
 
       <div className="grid grid-cols-2 gap-3">
-        <Button variant="outline" className="flex items-center justify-center gap-2 rounded">
+        <Button
+          variant="outline"
+          disabled
+          title="Not available in this demo"
+          className="flex items-center justify-center gap-2 rounded"
+        >
           <Icon name="mail" size={18} />
           Google
         </Button>
-        <Button variant="outline" className="flex items-center justify-center gap-2 rounded">
+        <Button
+          variant="outline"
+          disabled
+          title="Not available in this demo"
+          className="flex items-center justify-center gap-2 rounded"
+        >
           <Icon name="work" size={18} />
           LinkedIn
         </Button>

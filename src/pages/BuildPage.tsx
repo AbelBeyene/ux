@@ -33,6 +33,8 @@ export function BuildPage({ onNavigate }: BuildPageProps) {
   const [activeSection, setActiveSection] = useState<string>();
   const [exportOpen, setExportOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
+  const resolveSuggestion = (id: string) => setResolvedIds((prev) => new Set(prev).add(id));
 
   // Runs the real AI critique against this page's own demo resume. Falls
   // back to the static demo suggestion groups while loading, on error, or
@@ -43,8 +45,22 @@ export function BuildPage({ onNavigate }: BuildPageProps) {
     runCritique(buildResumePlainText);
   }, [runCritique]);
 
-  const suggestionGroups: SuggestionGroup[] =
+  const baseSuggestionGroups: SuggestionGroup[] =
     critique.status === "success" && critique.data ? toSuggestionGroups(critique.data) : demoSuggestionGroups;
+
+  // Accepted/declined suggestions both leave the pending list — there's no
+  // document text they can be spliced into automatically, so "resolving"
+  // them is the real, honest effect of either action.
+  const suggestionGroups: SuggestionGroup[] = baseSuggestionGroups
+    .map((group) => ({
+      ...group,
+      suggestions: group.suggestions.filter((s) => !resolvedIds.has(s.id)),
+    }))
+    .filter((group) => group.suggestions.length > 0);
+
+  const totalSuggestions = baseSuggestionGroups.reduce((n, g) => n + g.suggestions.length, 0);
+  const progress =
+    totalSuggestions > 0 ? Math.round((resolvedIds.size / totalSuggestions) * 100) : 0;
 
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     [demoSuggestionGroups[0].id]: true,
@@ -131,6 +147,7 @@ export function BuildPage({ onNavigate }: BuildPageProps) {
             )}
           >
             <ResumeDocument
+          className="print-resume-target"
           name="Alexander Rivera"
           contact={{
             items: ["New York, NY", "arivera.pro@email.com", "555-0123", "linkedin.com/in/arivera"],
@@ -208,7 +225,7 @@ export function BuildPage({ onNavigate }: BuildPageProps) {
       <RefinementPanel
         subtitle="Personalized improvements based on Senior PM benchmarks."
         suggestionCount={suggestionGroups.reduce((n, g) => n + g.suggestions.length, 0)}
-        progress={60}
+        progress={progress}
         onRescan={critique.rescan}
       >
         {critique.status === "loading" && (
@@ -235,8 +252,8 @@ export function BuildPage({ onNavigate }: BuildPageProps) {
                 key={suggestion.id}
                 suggestion={suggestion}
                 variant="plain"
-                onAccept={() => {}}
-                onDecline={suggestion.declinable ? () => {} : undefined}
+                onAccept={() => resolveSuggestion(suggestion.id)}
+                onDecline={suggestion.declinable ? () => resolveSuggestion(suggestion.id) : undefined}
                 preview={
                   suggestion.previewable
                     ? {
@@ -256,8 +273,7 @@ export function BuildPage({ onNavigate }: BuildPageProps) {
         open={exportOpen}
         onClose={() => setExportOpen(false)}
         shareUrl={resumeMeta.shareUrl}
-        onDownloadPdf={() => {}}
-        onShareLink={() => {}}
+        onDownloadPdf={() => window.print()}
       />
     </AppShell>
   );

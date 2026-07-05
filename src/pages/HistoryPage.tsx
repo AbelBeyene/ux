@@ -1,8 +1,8 @@
-import { useRef, useState } from "react";
 import { AppShell, HeaderUtilities, Sidebar, TopBar } from "../components/layout";
 import { Button, Icon } from "../components/ui";
 import { ActivityFeed, GeoDistribution, KpiCard, LinkPerformance } from "../components/analytics";
-import { currentUser, navItems, notifications } from "../data/resume";
+import { useCopyToClipboard } from "../lib/useCopyToClipboard";
+import { currentUser, navItems, notifications, resumePlainText } from "../data/resume";
 import {
   activityEvents,
   countryStats,
@@ -17,19 +17,8 @@ export interface HistoryPageProps {
 
 /** Resume analytics: how a shared resume performs after being viewed or downloaded. */
 export function HistoryPage({ onNavigate }: HistoryPageProps) {
-  const [copied, setCopied] = useState(false);
-  const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  const copyShareLink = async () => {
-    try {
-      await navigator.clipboard.writeText(resumeMeta.shareUrl);
-      setCopied(true);
-      clearTimeout(copyTimer.current);
-      copyTimer.current = setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard unavailable (permissions/insecure context) — leave the label unchanged.
-    }
-  };
+  const { copied, copy } = useCopyToClipboard(2000);
+  const copyShareLink = () => copy(resumeMeta.shareUrl);
 
   return (
     <AppShell
@@ -71,7 +60,7 @@ export function HistoryPage({ onNavigate }: HistoryPageProps) {
                 <Icon name={copied ? "check" : "link"} size={20} />
                 {copied ? "Copied!" : "Copy Share Link"}
               </Button>
-              <Button className="flex items-center gap-2 rounded">
+              <Button className="flex items-center gap-2 rounded" onClick={() => window.print()}>
                 <Icon name="download" size={20} />
                 Download Resume
               </Button>
@@ -95,6 +84,11 @@ export function HistoryPage({ onNavigate }: HistoryPageProps) {
           <GeoDistribution stats={countryStats} />
         </div>
       </main>
+
+      {/* Screen-hidden, print-only: the actual resume content "Download Resume" produces. */}
+      <pre className="hidden print:block print-resume-target whitespace-pre-wrap font-sans text-body-md text-text-main p-10">
+        {resumePlainText}
+      </pre>
     </AppShell>
   );
 }

@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { cn } from "../../lib/cn";
-import { Avatar, Button, Icon } from "../ui";
+import { Avatar, Button, Dialog, Icon } from "../ui";
 
 export interface SidebarNavItem {
   /** Stable identifier, also used to mark the active item. */
@@ -41,6 +42,8 @@ export function Sidebar({
   onNavigate,
   className,
 }: SidebarProps) {
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
   return (
     <aside
       className={cn(
@@ -91,7 +94,12 @@ export function Sidebar({
 
       <div className="mt-auto p-2">
         {cta && (
-          <Button fullWidth size="lg" className="shadow-lg" onClick={cta.onClick}>
+          <Button
+            fullWidth
+            size="lg"
+            className="shadow-lg"
+            onClick={cta.onClick ?? (() => setUpgradeOpen(true))}
+          >
             {cta.label}
           </Button>
         )}
@@ -107,6 +115,22 @@ export function Sidebar({
           </div>
         )}
       </div>
+
+      {!cta?.onClick && (
+        <Dialog
+          open={upgradeOpen}
+          onClose={() => setUpgradeOpen(false)}
+          title="Upgrade to Pro"
+          subtitle="Coming soon — billing isn't set up in this demo yet."
+          footer={
+            <Button onClick={() => setUpgradeOpen(false)}>Got it</Button>
+          }
+        >
+          <p className="text-body-sm text-text-muted">
+            Pro will unlock unlimited AI re-scans, resume versioning, and priority job matching.
+          </p>
+        </Dialog>
+      )}
     </aside>
   );
 }

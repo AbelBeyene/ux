@@ -1,4 +1,5 @@
-import { Avatar, Icon, Menu, MenuDivider, MenuItem } from "../ui";
+import { Avatar, Icon, IconButton, Menu, MenuDivider, MenuItem } from "../ui";
+import { usePersistentState } from "../../lib/usePersistentState";
 import type { SidebarUser } from "./Sidebar";
 
 export interface NotificationItem {
@@ -17,6 +18,13 @@ export interface HeaderUtilitiesProps {
 
 /** Standard top-bar utility cluster: notifications popover + profile menu. */
 export function HeaderUtilities({ user, notifications = [], onNavigate }: HeaderUtilitiesProps) {
+  const [dismissedIds, setDismissedIds] = usePersistentState<string[]>(
+    "resumeai:dismissedNotificationIds",
+    [],
+  );
+  const visible = notifications.filter((item) => !dismissedIds.includes(item.id));
+  const dismiss = (id: string) => setDismissedIds((prev) => [...prev, id]);
+
   return (
     <>
       <Menu
@@ -25,7 +33,7 @@ export function HeaderUtilities({ user, notifications = [], onNavigate }: Header
         trigger={
           <span className="relative flex p-1 text-text-main">
             <Icon name="notifications" />
-            {notifications.length > 0 && (
+            {visible.length > 0 && (
               <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-secondary rounded-full border-2 border-surface-white" />
             )}
           </span>
@@ -33,15 +41,24 @@ export function HeaderUtilities({ user, notifications = [], onNavigate }: Header
       >
         <p className="px-4 py-2 text-label-md font-bold text-text-main uppercase">Notifications</p>
         <MenuDivider />
-        {notifications.length === 0 && (
+        {visible.length === 0 && (
           <p className="px-4 py-6 text-body-sm text-text-muted text-center">You're all caught up.</p>
         )}
-        {notifications.map((item) => (
-          <MenuItem key={item.id} icon={item.icon}>
+        {visible.map((item) => (
+          <MenuItem key={item.id} icon={item.icon} className="items-start">
             <span className="flex-1 min-w-0">
               <span className="block truncate">{item.title}</span>
               <span className="block text-label-sm text-text-muted">{item.time}</span>
             </span>
+            <IconButton
+              icon="close"
+              label={`Dismiss: ${item.title}`}
+              className="p-1 -mr-1 shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                dismiss(item.id);
+              }}
+            />
           </MenuItem>
         ))}
       </Menu>

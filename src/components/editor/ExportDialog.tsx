@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { cn } from "../../lib/cn";
+import { useCopyToClipboard } from "../../lib/useCopyToClipboard";
 import { Button, Dialog, Icon } from "../ui";
 
 export type ExportMethod = "link" | "pdf";
@@ -70,8 +71,7 @@ function OptionCard({ selected, onSelect, icon, title, badge, description, child
 /** Export chooser: trackable share link (with analytics benefits) vs. static PDF. */
 export function ExportDialog({ open, onClose, shareUrl, onDownloadPdf, onShareLink }: ExportDialogProps) {
   const [method, setMethod] = useState<ExportMethod>("link");
-  const [copied, setCopied] = useState(false);
-  const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const { copied, copy } = useCopyToClipboard(1200);
 
   const confirm = async () => {
     if (method === "pdf") {
@@ -79,18 +79,9 @@ export function ExportDialog({ open, onClose, shareUrl, onDownloadPdf, onShareLi
       onClose();
       return;
     }
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-    } catch {
-      // Clipboard unavailable — still surface the copied state so the URL shown can be copied manually.
-    }
+    await copy(shareUrl);
     onShareLink?.();
-    setCopied(true);
-    clearTimeout(copyTimer.current);
-    copyTimer.current = setTimeout(() => {
-      setCopied(false);
-      onClose();
-    }, 1200);
+    setTimeout(onClose, 1200);
   };
 
   return (

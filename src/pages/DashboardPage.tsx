@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AppShell, HeaderUtilities, Sidebar, TopBar } from "../components/layout";
 import { Button, Fab, Icon, SearchInput } from "../components/ui";
 import {
@@ -17,6 +17,8 @@ import {
   toRelevanceScores,
   useAtsAnalysis,
 } from "../features/ats-analysis";
+import { extractTextFromFile } from "../features/resume-upload/extractText";
+import { usePersistentState } from "../lib/usePersistentState";
 import {
   currentUser,
   navItems,
@@ -38,10 +40,30 @@ export interface DashboardPageProps {
 
 /** ATS analytics dashboard: readiness gauge, keyword analysis, checks, career projection. */
 export function DashboardPage({ onNavigate }: DashboardPageProps) {
-  // Runs the real AI analysis against the demo resume on load. Falls back to
-  // the static demo data below while loading or on error — the page never
-  // looks broken either way.
-  const analysis = useAtsAnalysis({ resumeText: resumePlainText, targetRole: profile.title });
+  const [resumeText, setResumeText] = useState(resumePlainText);
+  const [fileName, setFileName] = useState("Senior_Product_Designer_2024.pdf");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const text = await extractTextFromFile(file);
+      setResumeText(text);
+      setFileName(file.name);
+      setUploadError(null);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "Couldn't read that file.");
+    }
+  };
+
+  // Runs the real AI analysis against the current resume text on load, and
+  // again automatically whenever a new file is uploaded (it's part of the
+  // query key below). Falls back to the static demo data while loading or
+  // on error — the page never looks broken either way.
+  const analysis = useAtsAnalysis({ resumeText, targetRole: profile.title });
   const live = analysis.data;
 
   const displayScore = live ? live.readinessScore : 84;
@@ -58,8 +80,8 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
     ? live.careerDescription
     : "Based on your current experience progression, you are 2.5 years away from Leadership roles.";
 
-  // Saved jobs live only in client state for now — no persistence backend yet.
-  const [savedJobIds, setSavedJobIds] = useState<ReadonlySet<string>>(new Set());
+  const [savedJobIdList, setSavedJobIdList] = usePersistentState<string[]>("resumeai:savedJobIds", []);
+  const savedJobIds = useMemo(() => new Set(savedJobIdList), [savedJobIdList]);
 
   const { jobs, loading, error, refresh } = useJobMatches({
     query: {
@@ -104,9 +126,8 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
             <div>
               <h2 className="text-headline-lg text-primary mb-1">ATS Compatibility Dashboard</h2>
               <p className="text-text-muted text-body-md">
-                Resume:{" "}
-                <span className="font-bold text-primary">Senior_Product_Designer_2024.pdf</span> •
-                Analyzed 2 hours ago
+                Resume: <span className="font-bold text-primary">{fileName}</span> • Analyzed 2
+                hours ago
               </p>
               {analysis.loading && (
                 <p className="mt-1 flex items-center gap-2 text-label-sm text-text-muted">
@@ -119,9 +140,23 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
                   Live AI analysis unavailable ({analysis.error}) — showing example data.
                 </p>
               )}
+              {uploadError && (
+                <p className="mt-1 text-label-sm text-error">{uploadError}</p>
+              )}
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" className="flex items-center gap-2 rounded">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <Button
+                variant="outline"
+                className="flex items-center gap-2 rounded"
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <Icon name="upload_file" size={20} />
                 Upload Resume
               </Button>
@@ -184,12 +219,9 @@ export function DashboardPage({ onNavigate }: DashboardPageProps) {
           if (job.applyLink) window.open(job.applyLink, "_blank", "noopener,noreferrer");
         }}
         onSave={(job) =>
-          setSavedJobIds((prev) => {
-            const next = new Set(prev);
-            if (next.has(job.id)) next.delete(job.id);
-            else next.add(job.id);
-            return next;
-          })
+          setSavedJobIdList((prev) =>
+            prev.includes(job.id) ? prev.filter((id) => id !== job.id) : [...prev, job.id],
+          )
         }
         onViewAll={() => onNavigate?.("history")}
       />

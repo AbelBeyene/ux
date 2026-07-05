@@ -64,11 +64,21 @@ export function SignUpPage({ onNavigate }: SignUpPageProps) {
       <AuthDivider label="or sign up with" />
 
       <div className="grid grid-cols-2 gap-3">
-        <Button variant="outline" className="flex items-center justify-center gap-2 rounded">
+        <Button
+          variant="outline"
+          disabled
+          title="Not available in this demo"
+          className="flex items-center justify-center gap-2 rounded"
+        >
           <Icon name="mail" size={18} />
           Google
         </Button>
-        <Button variant="outline" className="flex items-center justify-center gap-2 rounded">
+        <Button
+          variant="outline"
+          disabled
+          title="Not available in this demo"
+          className="flex items-center justify-center gap-2 rounded"
+        >
           <Icon name="work" size={18} />
           LinkedIn
         </Button>

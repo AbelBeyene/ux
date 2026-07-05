@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppShell, HeaderUtilities, Sidebar, TopBar } from "../components/layout";
-import { Avatar, Button, Card, SelectField, TextField, Toggle } from "../components/ui";
+import { Avatar, Button, Card, Dialog, SelectField, TextField, Toggle } from "../components/ui";
+import { usePersistentState } from "../lib/usePersistentState";
 import { currentUser, navItems, notifications } from "../data/resume";
 
 export interface SettingsPageProps {
@@ -47,16 +48,58 @@ function PreferenceRow({
   );
 }
 
+const DEFAULT_PROFILE = {
+  name: "Alex Rivera",
+  title: "Senior Product Designer",
+  email: "alex.rivera@example.com",
+  location: "San Francisco, CA",
+};
+
 /** Account settings: profile, notification preferences, AI behavior, danger zone. */
 export function SettingsPage({ onNavigate }: SettingsPageProps) {
-  const [prefs, setPrefs] = useState({
+  const [profile, setProfile] = usePersistentState("resumeai:profile", DEFAULT_PROFILE);
+  const [avatarDataUrl, setAvatarDataUrl] = usePersistentState<string | null>(
+    "resumeai:avatarDataUrl",
+    null,
+  );
+  const [prefs, setPrefs] = usePersistentState("resumeai:notificationPrefs", {
     scoreAlerts: true,
     jobMatches: true,
     weeklyDigest: false,
     autoRescan: true,
   });
+  const [aiPrefs, setAiPrefs] = usePersistentState("resumeai:aiPrefs", {
+    tone: "balanced",
+    seniority: "senior",
+  });
   const setPref = (key: keyof typeof prefs) => (value: boolean) =>
     setPrefs((prev) => ({ ...prev, [key]: value }));
+
+  const [saved, setSaved] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSave = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setAvatarDataUrl(typeof reader.result === "string" ? reader.result : null);
+    reader.readAsDataURL(file);
+  };
+
+  const handleDeleteAccount = () => {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("resumeai:"))
+      .forEach((key) => localStorage.removeItem(key));
+    setDeleteOpen(false);
+    onNavigate?.("signin");
+  };
 
   return (
     <AppShell
@@ -75,7 +118,11 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         <TopBar
           title="Settings"
           status="Changes are saved to your account"
-          actions={<Button size="md">Save Changes</Button>}
+          actions={
+            <Button size="md" onClick={handleSave}>
+              {saved ? "Saved" : "Save Changes"}
+            </Button>
+          }
           utilities={
             <HeaderUtilities user={currentUser} notifications={notifications} onNavigate={onNavigate} />
           }
@@ -86,27 +133,58 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         <div className="max-w-3xl mx-auto p-stack-lg space-y-stack-md">
           <SettingsSection title="Profile" description="How you appear across ResumeAI.">
             <div className="flex items-center gap-4 mb-5">
-              <Avatar src={currentUser.avatarUrl} alt={currentUser.name} size="lg" className="border-outline-variant" />
+              <Avatar
+                src={avatarDataUrl ?? currentUser.avatarUrl}
+                alt={profile.name}
+                size="lg"
+                className="border-outline-variant"
+              />
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="rounded">
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoChange}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded"
+                  onClick={() => avatarInputRef.current?.click()}
+                >
                   Change Photo
                 </Button>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => setAvatarDataUrl(null)}>
                   Remove
                 </Button>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <TextField label="Full Name" defaultValue="Alex Rivera" autoComplete="name" />
-              <TextField label="Job Title" defaultValue="Senior Product Designer" />
+              <TextField
+                label="Full Name"
+                autoComplete="name"
+                value={profile.name}
+                onChange={(e) => setProfile((prev) => ({ ...prev, name: e.target.value }))}
+              />
+              <TextField
+                label="Job Title"
+                value={profile.title}
+                onChange={(e) => setProfile((prev) => ({ ...prev, title: e.target.value }))}
+              />
               <TextField
                 label="Email"
                 type="email"
-                defaultValue="alex.rivera@example.com"
                 autoComplete="email"
                 helper="Used for sign-in and notifications."
+                value={profile.email}
+                onChange={(e) => setProfile((prev) => ({ ...prev, email: e.target.value }))}
               />
-              <TextField label="Location" defaultValue="San Francisco, CA" />
+              <TextField
+                label="Location"
+                value={profile.location}
+                onChange={(e) => setProfile((prev) => ({ ...prev, location: e.target.value }))}
+              />
             </div>
           </SettingsSection>
 
@@ -143,7 +221,8 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                   { value: "balanced", label: "Balanced" },
                   { value: "conversational", label: "Conversational" },
                 ]}
-                defaultValue="balanced"
+                value={aiPrefs.tone}
+                onChange={(e) => setAiPrefs((prev) => ({ ...prev, tone: e.target.value }))}
               />
               <SelectField
                 label="Target Seniority"
@@ -152,8 +231,9 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
                   { value: "senior", label: "Senior" },
                   { value: "lead", label: "Lead / Principal" },
                 ]}
-                defaultValue="senior"
                 helper="Benchmarks and keywords adapt to this level."
+                value={aiPrefs.seniority}
+                onChange={(e) => setAiPrefs((prev) => ({ ...prev, seniority: e.target.value }))}
               />
             </div>
             <PreferenceRow
@@ -173,12 +253,37 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
               variant="ghost"
               size="sm"
               className="border border-error/40 text-error hover:bg-error-container/40 rounded"
+              onClick={() => setDeleteOpen(true)}
             >
               Delete Account
             </Button>
           </Card>
         </div>
       </main>
+
+      <Dialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Delete your account?"
+        subtitle="This removes all locally saved resumes, analyses and preferences. This cannot be undone."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-error text-on-error hover:bg-error/90"
+              onClick={handleDeleteAccount}
+            >
+              Delete Account
+            </Button>
+          </>
+        }
+      >
+        <p className="text-body-sm text-text-muted">
+          You'll be signed out and returned to the sign-in screen.
+        </p>
+      </Dialog>
     </AppShell>
   );
 }

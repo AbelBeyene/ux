@@ -83,3 +83,23 @@
     border-radius: 10px;
   }
 }
+
+/* "Download PDF" / "Download Resume" print the page via the browser's native
+   print-to-PDF — no client PDF library needed. Only the tagged resume node
+   is shown; everything else in the app chrome is hidden for the print pass. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-resume-target,
+  .print-resume-target * {
+    visibility: visible;
+  }
+  .print-resume-target {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    box-shadow: none;
+    border: none;
+  }
+}
